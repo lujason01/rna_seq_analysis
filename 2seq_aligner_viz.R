@@ -35,7 +35,9 @@ my2seq_alignment_viz  <- function(sequence_2, sequence_1){
    
   }
   
-  ##Visualization function 
+  ##Visualization function (requires ggplot2 package)
+  library(ggplot2) #loading ggplot2
+  
   max_row_mtrx <- t(apply(our_algo[2:nrow(our_algo),2:ncol(our_algo)], 1, function(row) {
     row[row != max(row)] <- 0 #replace with zero if not max
     return(row)
