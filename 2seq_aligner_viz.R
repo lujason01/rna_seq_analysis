@@ -34,19 +34,29 @@ my2seq_alignment_viz  <- function(sequence_2, sequence_1){
     }
    
   }
+
+  #Give the user the option to chose an alignment visualisation 
+  #Hence we will nest the visualization code in an if construct.
   
-  ##Visualization function (requires ggplot2 package)
-  library(ggplot2) #loading ggplot2
-  
+  ask <- readline(prompt = "Would you like a Visual? (Y/N) ") #generates question
+
+if (ask == "Y") {
+  ##Excecute Visualization function 
   max_row_mtrx <- t(apply(our_algo[2:nrow(our_algo),2:ncol(our_algo)], 1, function(row) {
     row[row != max(row)] <- 0 #replace with zero if not max
     return(row)
   }))  ##t() returns the matrix with the same dimensions.
   
-  max_row_mtrx <- heatmap(max_row_mtrx, Rowv = NA, Colv = NA)  #clustering or reodering rows and columns inhibited.
-  
-  return(max_row_mtrx)
+  max_row_mtrx <- heatmap(max_row_mtrx, Rowv = NA, Colv = NA) #Y or Yes returns heatmap
+  ##clustering or reodering rows and columns inhibited (removes dendogram)
 }
+  
+our_algo #N (No), Outputs only alignment matrix (No visual)
+  
+}
+
+#end of function definition
+
 
 #TESTING 1,2
 
