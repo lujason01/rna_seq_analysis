@@ -48,7 +48,7 @@ if (ask == "Y") {
   }))  ##t() returns the matrix with the same dimensions.
   
   max_row_mtrx <- heatmap(max_row_mtrx, Rowv = NA, Colv = NA) #Y or Yes returns heatmap
-  ##clustering or reodering rows and columns inhibited (removes dendogram)
+  ##clustering or reodering rows and columns inhibited (removes dendrogram)
 }
   
 our_algo #N (No), Outputs only alignment matrix (No visual)
