@@ -1,0 +1,11 @@
+## in R
+
+#### Install rworkflows R package ####
+### For the stable CRAN release
+if(!require("rworkflows")) install.packages("rworkflows")
+
+### Or, for the latest development version
+# if(!require("rworkflows")) remotes::install_github("neurogenomics/rworkflows")
+
+### Create workflow file
+path <- rworkflows::use_workflow()
