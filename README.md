@@ -1,10 +1,9 @@
-# r-practice
-This is my R playground. 
-I will be going crazy here.
-It is meant to keep scripts and custom functions. 
+**RNA-Seq Analysis Folder**
 
-Feel free to make any corrections, advise or optimise the code (too bad, I am a hardworker)
+This folder will contain my RNA-Seq Analysis practice files. 
 
-We'll be smart soon.
+Mainly Markdowns, Scripts and any related data. 
 
-Let's go!
+Feel free to review the code and the logic and advise accordingly. 
+
+I'd appreciate any guidance on this learning curve.
