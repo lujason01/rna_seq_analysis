@@ -111,8 +111,6 @@ sample_metadata <- pData(GSE183325_gse)
 #colnames(counts_rawdata) == rownames(sample_metadata) #ALL TRUE
 colnames(counts_rawdata) <- rownames(sample_metadata) #success
 
-
-
 ```
 
 
@@ -208,9 +206,7 @@ head(gene_mapping_combined)
 
 #**** gene_mapping_annotated has all IDs but some are duplicated 
 #* gene_mapping has unique ensembl Ids (no duplications)
-#* 
-#* 
-
+ 
 gene_mapping_metadata_COMPLETE <- merge.data.frame(gene_metadata_annotated, gene_mapping_annotated, by.x=0, by.y="ensembl_gene_id" )
 
 #** gene_mapping_metadata_COMPLETE has is the BEST gene metadata set as it contains all fields from both "org.Hs.eg.db" and "BiomaRt"
