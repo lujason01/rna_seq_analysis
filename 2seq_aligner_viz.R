@@ -1,4 +1,5 @@
 #Pairwise Sequence alignment function called "my2seq_alignment_viz"
+
 #This code creates a function that aligns two sequences and outputs a visual representation.
 #It uses the needleman algorithm however the penalizations are different 
 # Match +1, Mismatch -1, Gap -1 
