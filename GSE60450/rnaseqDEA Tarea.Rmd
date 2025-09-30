@@ -1,0 +1,575 @@
+---
+title: "RNASeq DEA Tarea: Transcriptional Changes Associated with the Development Stage In Luminal Cells."
+author: "Giordana ,  Kristell Panta, Jason Lubega"
+date: "12.Feb.2025"
+output:
+  html_document:
+    toc: true
+    df_print: paged
+  html_notebook:
+    toc: true
+    css: rmdstyle2.css
+---
+
+## **Introduction**
+
+This dataset [GSE60450](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE60450) contains the gene expression profiles of luminal and basal cells from different developmental stages.\
+Luminal and basal cells were harvested from the mammary glands of virgin, 18.5 day pregnant and 2 day lactating mice (2 mice per stage).
+
+The original article was published [HERE](https://www.nature.com/articles/ncb3117)
+
+## **Task**
+
+We will perform a differential expression analysis (DEA) to identify the transcriptional changes associated with the development stage in **luminal cells.**
+
+For the purpose of this assignment We will use the **lima-voom** (linear model) approach which requires that the data is normally distributed.
+
+## **PLAN**
+
+1.  Data Preparation
+2.  Data filtering - filterByExpr()
+3.  Normalize data - using TMM
+4.  Design matrix definition - model.matrix()
+5.  Voom transformation - voom()
+6.  Lineal model fit - lmFit()
+7.  Statistic test - eBayes()
+
+------------------------------------------------------------------------
+
+### **Data Preparation**
+
+Set working directory\
+Load libraries\
+Input/Load data
+
+```{r eval=TRUE, echo=TRUE}
+#Set working directory
+setwd("C:/Users/Lenovo/MIB Assignments/NOTES/Bioinformatica/Bioinformatics Practice R/GSE60450 RNASeqDATA")
+getwd()
+
+#Load libraries 
+library(ggplot2)
+library(limma)
+suppressPackageStartupMessages(library(ComplexHeatmap))
+library(edgeR)
+library(reshape2)
+library(org.Mm.eg.db)
+
+#Input or load data
+
+# Count matrix:
+counts <- read.table("count_data_GSE60450.txt", sep=";")
+View(counts)
+
+# Sample metadata:
+sample_metadata <- read.table("sample_metadata_GSE60450.txt", sep=";")
+View(sample_metadata)
+
+# Feature (genes) metadata:
+gene_metadata <- read.table("gene_metadata_GSE60450.txt", sep=";", header = TRUE, fill = TRUE)
+View(gene_metadata)
+
+```
+
+Our focus will be the luminal cells data. Therefore we will create a luminal cells only counts matrix.
+
+```{r eval=TRUE, echo=TRUE}
+#Create counts_luminal only matrix
+
+counts_luminal <- counts[,sample_metadata$cell_type=="luminal cell population"]
+dim(counts_luminal) #27179   by  6
+
+sample_metadata_luminal <- sample_metadata[sample_metadata$cell_type=="luminal cell population",]
+View(sample_metadata_luminal)
+
+View(counts_luminal)
+
+
+```
+
+We will also create an object to group later by the development stage (reference to objective)
+
+```{r eval=TRUE, echo=TRUE}
+
+#group_dvst <- sample_metadata_luminal$developmental_stage
+#table(group_dvst)
+
+#changed due to downstream analysis (contrasts)
+group_dvst <- factor(sample_metadata_luminal$developmental_stage)
+levels(group_dvst)
+table(group_dvst)
+
+```
+
+### **Data filtering:**
+
+We will filter the data using the **filterByExpr()** in which the minimum count for each gene is 10. This function requires the edgeR library installed. Filtered data will be named **counts_luminal_filtered**
+
+```{r eval=TRUE, echo=TRUE}
+library(edgeR)
+
+print(max(counts_luminal)) # maximum read = 2887969
+
+print(min(counts_luminal)) #minimum read = 0
+
+?filterByExpr
+
+
+#creating filtering criteria
+myge_filter <- filterByExpr(counts_luminal, design = NULL, group = group_dvst, min.count = 10, min.total.count = 15)
+
+table(myge_filter)  
+#**
+#*FALSE  TRUE 
+#*12597 14582 
+
+## Using filter to keep only TRUE values
+counts_luminal_filtered <- counts_luminal[myge_filter, ]
+dim(counts_luminal_filtered) #14582   by  6... FANTASTIC!
+
+
+#checking if filter worked
+print(max(counts_luminal_filtered)) # maximum read = 2887969
+print(min(counts_luminal_filtered)) #minimum read = 0 !!!???? min should be 10 
+
+#* For the minimum read, we got 0, because some genes do not express until a certain stage (where the number of reads increases and is eventually greater than the filter). 
+#* You can check this by exploring the filtered matrix with View(counts_luminal_filtered)
+
+```
+
+------------------------------------------------------------------------
+
+#### **PAUSE: Show Me GRAPHICS!**
+
+What do we have up to this point?
+
+------------------------------------------------------------------------
+
+Use *par(mfrow)* to display all the graphics generated in a single row.
+
+1.depth plot\
+
+```{r eval=TRUE, echo=TRUE}
+
+#depth plot
+
+lumcounts_to_plot <- data.frame(sample_id=colnames(counts_luminal_filtered),depth=colSums(counts_luminal_filtered))
+
+View(lumcounts_to_plot)
+
+library(ggplot2)
+
+ggplot(lumcounts_to_plot,aes(x=sample_id, y=depth, fill=sample_id)) +
+  geom_col() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle=90))
+
+
+```
+
+
+
+------------------------------------------------------------------------
+
+2.Box plot (Distribution)\
+
+```{r}
+## filtered Counts distribution
+
+lumcounts_to_plot <- stack(counts_luminal_filtered) #to reorganise data as frequency per Sample 
+
+ggplot(lumcounts_to_plot,aes(x=ind, y=values)) +
+  geom_boxplot() +
+  ggtitle("Distribution of Luminal Counts (filtered)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle=90)) +
+  scale_y_log10() +
+  xlab("Luminal Samples") +
+  ylab("log10(Values)")
+
+
+```
+
+
+
+### **Normalise data:**
+
+Now that data has been filtered, we will normalize it before using the linear model.
+
+We will normalize this data using the **TMM method** as it compensates for more dominant genes unlike the CPM (total counts only). 
+
+The TMM method requires the *edgeR()* library and requires that data be transformed into a DGE list first. 
+
+```{r eval=TRUE, echo=TRUE}
+
+#Normalizing data using TMM 
+
+library(edgeR) #load required library for TMM
+
+dge <- DGEList(counts = counts_luminal_filtered, group= group_dvst)
+
+#?calcNormFactors
+
+counts_luminal_normalized <- calcNormFactors(dge, method = "TMM") 
+
+```
+
+
+
+**Question: Why have we normalized the way we have with *calcNormFactors* instead of manually with the code below?**
+
+```{r eval=FALSE, echo=TRUE}
+counts_luminal_normalized <- normLibSizes(dge, method = "TMM") 
+
+counts_luminal_normalized <- cpm(counts_luminal_normalized, normalized.lib.sizes = TRUE) 
+counts_luminal_normalized_log2 <- log2(counts_luminal_normalized + 1)
+```
+
+**Answer:** 
+
+This is because the method we are using to call DEA (Differential Gene Expression) - **limma-voom** requires that data be fit onto a linear model.
+
+calcNormFactors() and normLibSizes() are two TMM normalisation approaches with different outputs. 
+
+normLibSizes() normally used for data exploration as it normalises reads counts (lib.sizes). You would also have to perform cpm() in addition to this commmand. 
+
+calcNormFactors() accounts for the expression of each gene relative to the other and therefore is more suitable for DGE analysis. 
+
+For Voom transformation, the most suitable output is by calcNormFactors() which is then transformed and log2CPM is applied all within the voom() function.
+
+
+### **Voom transformation:**
+
+*voom()* stands for "variance modeling at the observational level." It transforms raw RNA-seq counts into log2 counts-per-million (logCPM) while accounting for mean-variance relationships in the data.
+
+RNA-seq count data is not *normally distributed*, however, **lmFit()** assumes normally distributed values therfore **voom()** estimates mean-variance relationships and transforms data to satisfy this assumption.
+
+A **design matrix** of the microarray experiment is needed. It contains rows corresponding to samples and columns to coefficients to be estimated. And defines intergroup comparisons.
+
+
+> How will the groups be compared?  
+Which should be the Control group?  Do we need one?  
+
+
+```{r eval=TRUE, echo=TRUE}
+#normalised data transformation
+
+#create design matrix (essential for voom() and lmFit())
+#?model.matrix
+
+#design_matrix <- model.matrix(~ group_dvst)
+#colnames(design_matrix) 
+
+#** Outputs 
+#*[1] "(Intercept)"               "group_dvst2 day lactation"
+#*[3] "group_dvstvirgin" 
+
+
+#WHO SHOULD BE THE CONTROL GROUP??? The model matrix chose the "18.5 day pregnancy" as the baseline group... Why not the virgin? 
+
+design_matrix <- model.matrix(~ 0 + group_dvst) #removes intercept
+colnames(design_matrix) 
+
+#voom transformation
+voom_transformed <- voom(counts_luminal_normalized, design_matrix, plot = TRUE)
+
+```
+
+Each dot represents a gene.  
+X axis represents the log-tranformed gene expression.  
+y axis represnts variance (sd)  
+
+**Take away:** Variance decreases with increasing gene expression (Red trend line).  
+The higher the gene is expressed *the more sure* we are it is there.
+
+**Normalised Data - Box plot**\
+
+```{r eval=FALSE, echo=FALSE}
+## Normalized Counts distribution
+
+library(tidyr)
+
+# Convert voom$E to data frame
+voomE_df <- as.data.frame(voom_transformed$E)
+
+# Add sample names
+voomE_df$Gene <- rownames(voom_transformed$E)
+
+# Convert from wide to long format
+voomE_df_long <- pivot_longer(voomE_df, cols = -Gene, names_to = "Sample", values_to = "Expression")
+
+voomE_df_long$Expression <- as.numeric(voomE_df_long$Expression)
+
+# Create boxplot
+ggplot(voomE_df_long, aes(x= "Sample", y="Expression")) +
+  geom_boxplot() +
+  ggtitle("Normalized Distribution of Luminal Counts (after Voom)") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90))+
+  scale_y_log10()+
+  xlab("Luminal Samples") +
+  ylab("log10(Expression)")
+
+head(voom_transformed$E, n=5)
+```
+
+### **Linear model fit:**
+
+We will fit our voom-transformed data on the linear model and we will visualise our fitted data. For this we have to use the model matrix in the **lmFit()** function.
+
+```{r eval=TRUE, echo=TRUE}
+#?lmFit
+
+#create fit data
+fit <- lmFit(voom_transformed, design =  design_matrix)
+
+#class(fit) #fit is "MArrayLM" - MicroArray Linear Model
+```
+
+ADJUSTED MEAN?? METHOD USED (TMM, BONFERONI, HOLM, **BH**)
+
+### **Statistic test:**
+
+We will use the eBayes() test:
+
+Given a linear model *fit* from *lmFit*, we can compute moderated t-statistics, moderated F-statistic, and log-odds of differential expression by empirical Bayes moderation of the standard errors towards a global value.
+
+This function is used to rank genes in order of evidence for differential expression. It uses an empirical Bayes method to squeeze the genewise-wise residual variances towards a common value (or towards a global trend) (Smyth, 2004; Phipson et al, 2016). 
+
+
+```{r eval=TRUE, echo=TRUE}
+#?eBayes
+
+fit_ebayes <- eBayes(fit)
+
+```
+
+
+### Output Matrix:
+
+We will generate the output matrix and save it as limma_GSE60450.rds using the saveRDS() function.
+
+```{r eval=TRUE, echo=TRUE}
+#output matrix with fold change and adj.p-value<=0.05 = gene expression significant
+
+#topTable function is part of the limma library
+#We will use it to extract the output or result matrix 
+
+results_allgenes <- topTable(fit_ebayes, coef = ncol(design_matrix), number = Inf, adjust.method = "BH")
+
+head(results_allgenes)
+```
+
+
+coef: Specifies condition to compare.   
+number = Inf, Retuens all genes.   
+adjust.method = “BH”, Benjamini-Hochberg to adjust p values.  
+
+
+
+
+**SAVING RESULTS**  
+
+As txt file *write.table()* and as rds *saveRDS()*
+
+```{r eval=TRUE, echo=TRUE}
+write.table(results_allgenes, file="limma_differential_expr_results.txt", sep="\t", quote=FALSE)
+
+#?saveRDS
+saveRDS(results_allgenes, file="DEA_limma_GSE60450.rds")
+
+```
+
+
+
+***  
+
+
+**Significantly DIFFERENTIALY EXPRESSED GENES** 
+
+How many genes are differentially expressed if we define a threshold of: adj.p-value\<=0.05 and \|log2(FCh)\|\>0.58 ?
+
+These will be saved as *sigGenes* 
+
+```{r eval=TRUE, echo=TRUE}
+
+sigGenes <- results_allgenes[results_allgenes$adj.P.Val<=0.05 & results_allgenes$logFC>0.58, ] #it is the rows that we are filtering based on the defined criteria but we want all columns to come back.
+
+dim(sigGenes)
+
+```
+Therefore **12144** genes are significantly differentially expressed with that defined threshold.  
+
+  
+ 
+ ●○●○●○●○●  
+ 
+ 
+**TOP 50 Differentially Expressed Genes**  
+
+For this we have to first organise the results *by the adjusted p values.*   
+
+```{r eval=TRUE, echo=TRUE}
+
+sigGenes <- sigGenes[order(sigGenes$adj.P.Val), ] #from most significant to least significant
+
+t50_sigGenes <- head(sigGenes, n=50)
+
+t50_sigGenes <- gene_metadata[rownames(t50_sigGenes), c("SYMBOL", "GENENAME")]
+
+t50_sigGenes
+```
+As seen above our gene metadata is not fully annotated therefore we will annotate it to have all genes identified.   
+For that we will use the *library(org.Mm.eg.db)* which contains all the information related with the Mus musculus genome.
+
+```{r eval=TRUE, echo=TRUE}
+library(org.Mm.eg.db)
+#columns(org.Mm.eg.db)
+
+gene_metadata_annotated <- select(org.Mm.eg.db,keys=rownames(gene_metadata),columns=c("ENTREZID","SYMBOL","GENENAME"))
+
+#View(gene_metadata_annnotated) 
+#This ommited the Length column but filled the symbols and gene names
+#We can now use this to identify the missing columns 
+selection <- head(sigGenes, n=50)
+
+t50_sigGenes_complete <- gene_metadata_annotated[gene_metadata_annotated$ENTREZID %in% rownames(head(sigGenes, n=50)), c("SYMBOL", "GENENAME")]
+
+```
+The table below shows the top 23/50 differentially expressed genes across all developmental stages. 27 gene IDs were not found.
+
+```{r eval=TRUE, echo=TRUE}
+t50_sigGenes_complete
+```
+
+
+### **Result Visualization:**
+
+**Principal Component**\
+To see developmental stage differences in Samples.  
+
+```{r eval=TRUE, echo=TRUE}
+
+pca <- prcomp(t(voom_transformed$E), scale. = TRUE)
+pca_data_to_plot <- data.frame(PC1 = pca$x[,1], PC2 = pca$x[,2], group = group_dvst)
+
+ggplot(pca_data_to_plot, aes(x = PC1, y = PC2, color = group_dvst)) +
+  geom_point(size=4) +
+  theme_minimal() +
+  labs(title = "PCA - RNA-seq Samples", x = "PC1", y = "PC2")
+
+```
+
+
+
+**Volcano plot**\
+
+Biological relevance vs Statistical significance.  
+
+```{r eval=TRUE, echo=TRUE}
+
+#Volcano Plot
+ggplot(results_allgenes, aes(x = logFC, y = -log10(adj.P.Val))) + 
+  # All genes = BLACK (These don't change)
+  geom_point(color = "black", alpha = 0.3) +
+  
+  #Overexpressed genes = RED
+  geom_point(data=results_allgenes[results_allgenes$logFC > 0.58 & results_allgenes$adj.P.Val <= 0.05,], 
+             aes(x = logFC, y = -log10(adj.P.Val)), color="red", alpha = 0.7) +
+  
+  #Under expressed genes = BLUE
+  geom_point(data=results_allgenes[results_allgenes$logFC < -0.58 & results_allgenes$adj.P.Val <= 0.05,], 
+             aes(x = logFC, y = -log10(adj.P.Val)), color="blue", alpha = 0.7) +
+  
+#ref lines
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "blue") +
+  geom_vline(xintercept = c(0.58, -0.58), linetype = "dashed", color = "gray") +
+  
+  theme_minimal() +
+  
+  labs(title = "Volcano Plot - Diferential Expression",
+       x = "Log2 Fold Change", 
+       y = "-Log10 P-value")
+
+```
+x axis = *whether a expression of gene changes in between groups*
+
+y axis = *whether the gene change is significant between groups.*
+
+
+## **Contrasts with a Heatmap**
+Top 50 genes differentially expressed genes in each development stage are visualized below with a heatmap. 
+
+This was easier to do in regards to statistical methods of comparing group levels against each other.
+
+Visual representation of this data requires that a **z_score** be obtained from the voom transformed (normalised data), this sets the mean of each sample to 0 and enables us to see the minor changes in gene expression visually (both above and below zero) 
+\
+
+```{r eval=TRUE, echo=TRUE}
+
+# Since we already Voom transformed the data, we can z transform it without renormalizing.
+Z_score_voom <- t(scale(t(voom_transformed$E), center = TRUE, scale = TRUE))
+
+#Order by Fc from Big to Small
+sigGenes_ordFch <- sigGenes[order(sigGenes$logFC, decreasing = TRUE),]
+
+stage_colors <- c(
+  "18.5 day pregnancy" = "#EE4D09",
+  "virgin" = "#22BA1A",            
+  "2 day lactation" = "#AB2087")   
+
+# Column annotation
+column_ha <- HeatmapAnnotation(
+  Developmental_Stage = group_dvst,  #dev stage grouping
+  col = list(Developmental_Stage = stage_colors)  #dev stage coloring
+)
+
+
+# heatmap for top 50 DE genes
+Heatmap(Z_score_voom[rownames(sigGenes_ordFch)[1:50],], 
+        row_names_gp = gpar(fontsize = 5),        
+        top_annotation = column_ha                 
+       )
+
+
+```
+
+For each of the developmental stages (samples), It is possible to extract overexpressed genes and underexpressed genes by using a selection criteria of z> 1.5 and z< -1.5 respectively. 
+
+Alternativeley, contrasts can be made to do the same.  
+
+
+## **Conclusions**
+
+We will report our findings based on the objective of this assignment, **to identify the transcriptional changes associated with the development stage in luminal cells.**
+
+1. A total of **27179** genes were sequence for the luminal cell population.  
+
+2. Of these **14582 (53.65%)** were retained after filtering (default filterByExpr())   
+
+3. **12144 (44.68%)** genes were differentially expressed (adj.p-value <=0.05 and log2(FCh) >0.58).  
+
+**Acknowledgements**  
+
+The commented scripts by Teacher Nuria were helpful in reusing the code.
+We also used chatGPT to debug the code and understand arguments and for clarity of some concepts. 
+
+
+## **References**
+
+1.  *Fu, N. Y., Rios, A. C., Pal, B., Soetanto, R., Lun, A. T. L., Liu, K., Beck, T., Best, S. A., Vaillant, F., Bouillet, P., Strasser, A., Preiss, T., Smyth, G. K., Lindeman, G. J., & Visvader, J. E. (2015). EGF-mediated induction of Mcl-1 at the switch to lactation is essential for alveolar cell survival. Nature Cell Biology 2014 17:4, 17(4), 365–375. <https://doi.org/10.1038/ncb3117>*
+
+2.  *GSE60450 (GEO data) - <https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE60450>*
+
+3.  *limma - voom ( <https://rpubs.com/jrgonzalezISGlobal/transcriptomic_analyses> )*
+
+4.  *edgeR (<https://www.bioconductor.org/packages/devel/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf>, points 2.10, 2.11)*
+
+5. *Identifying differentially expressed genes using linear models (part 1) - https://gtk-teaching.github.io/Microarrays-R/06-DifferentialGeneExpression/index.html*    
+
+6. *Use par mfrow to split screen - https://r-graph-gallery.com/71-split-screen-with-par-mfrow.html#:~:text=The%20par()%20function%20allows%20to%20set%20parameters%20to%20the,rows%20and%20number%20of%20columns.*  
+
+7. *Phipson B, Lee S, Majewski IJ, Alexander WS, Smyth GK (2016). Robust hyperparameter estimation protects against hypervariable genes and improves power to detect differential expression. Annals of Applied Statistics 10, 946-963. doi:10.1214/16-AOAS920* 
+
+8. *Smyth GK (2004). Linear models and empirical Bayes methods for assessing differential expression in microarray experiments. Statistical Applications in Genetics and Molecular Biology Volume 3, Issue 1, Article 3. doi:10.2202/1544-6115.1027. See also the Preprint Version https://gksmyth.github.io/pubs/ebayes.pdf incorporating corrections to 30 June 2009.*
+9. *OpenAI. (2025). ChatGPT (Feb 14 version) [Large language model]. Retrieved from https://openai.com*
