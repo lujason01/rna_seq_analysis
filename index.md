@@ -4,7 +4,7 @@
 Hey,  
 what we have here is a compilation of some **Bulk RNA Seq Analysis** I performed as I learnt R & R Studio.  
 
-Datasets were downloaded from *(Gene Expression Omnibus (GEO)**  
+Datasets were downloaded from **(Gene Expression Omnibus (GEO)**  
 
 --- 
 
