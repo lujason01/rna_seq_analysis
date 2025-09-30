@@ -24,9 +24,9 @@ Datasets were downloaded from **Gene Expression Omnibus ([GEO](https://www.ncbi.
 ---
 
 ## Project 3  
-- Dataset ID: 
-- Study title:
-- Brief description of the data:
+- Dataset ID: In house Bulk RNA Seq dataset (Under Review)
+- Study title: *Available after publication*
+- Brief description of the data: *Available after publication*
 
   
 ---  
