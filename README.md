@@ -1,4 +1,4 @@
-**RNA-Seq Analysis Folder**
+**RNA-Seq Analysis REPO**
 
 This repo will contain my RNA-Seq Analysis practice files. 
 
