@@ -10,29 +10,31 @@ Datasets were downloaded from **Gene Expression Omnibus ([GEO](https://www.ncbi.
 --- 
 
 ## Project 1  
+
+- **Dataset ID:** GSE280078 *Analysed before publication*
+- **Study title:** [Radiotherapy synergizes with an inducible AAV-based immunotherapy platform to program local and systemic antitumor immunity.](https://www.cell.com/cancer-cell/fulltext/S1535-6108(26)00111-X)
+- **Description:** This dataset contains RNA Seq data of an experiment *to determine the transcriptomic changes caused by Radiation and IL12 treatment on murine B16 melanoma tumors.* The expression of Luciferase and IL12 by the AAV8 vector was designed to be induced by radiation.
+- [**Analysis Report - GSE60450**](https://github.com/lujason01/rna_seq_analysis/blob/6364d488dbfb8dc88bd3f76987b4d6c976edb214/RT-IL12%20JD/IL12%20RT%20RNASeq%20Analysis.nb.html)
+  
+---
+
+## Project 2  
+
 - **Dataset ID:** GSE183325 
 - **Study title:** [The transcription factor DDIT3 is a potential driver of dyserythropoiesis in myelodysplastic syndromes](https://doi.org/10.1038/s41467-022-35192-7)  
 - **Description:** Myelodysplastic syndromes (MDS) are clonal hematopoietic stem cell (HSC) malignancies characterized by ineffective hematopoiesis with increased incidence in elderly individuals. Genetic alterations do not fully explain the molecular pathogenesis of the disease, indicating that other types of lesions may play a role in its development. In this work, we will analyze the transcriptional lesions of human HSCs to explore how aging and MDS are characterized
 
 - [**Analysis Report - GSE183325**](https://lujason01.github.io/rna_seq_analysis/GSE183325/PEC%20GSE183325%20JLnotebook.nb.html) 
 
----
+---  
 
-## Project 2  
+## Project 3  
+
 - **Dataset ID:** GSE60450
 - **Study title:** [EGF-mediated induction of Mcl-1 at the switch to lactation is essential for alveolar cell survival](https://doi.org/10.1038/ncb3117)
 - **Description:** This dataset GSE60450 contains the gene expression profiles of luminal and basal cells from different developmental stages. Luminal and basal cells were harvested from the mammary glands of virgin, 18.5 day pregnant and 2 day lactating mice (2 mice per stage).
 - **Task:** Perform a differential expression analysis (DEA) to identify the transcriptional changes associated with the development stage in luminal cells. --> Using *Limma-Voom*
 - [**Analysis Report - GSE60450**](https://lujason01.github.io/rna_seq_analysis/GSE60450/rnaseqDEA%20Tarea.nb.html)  
 
----  
-
-## Project 3  
-- **Dataset ID:** GSE280078 *Analysed before publication*
-- **Study title:** [Radiotherapy synergizes with an inducible AAV-based immunotherapy platform to program local and systemic antitumor immunity.](https://www.cell.com/cancer-cell/fulltext/S1535-6108(26)00111-X)
-- **Description:** This dataset contains RNA Seq data of an experiment *to determine the transcriptomic changes caused by Radiation and IL12 treatment on murine B16 melanoma tumors.* The expression of Luciferase and IL12 by the AAV8 vector was designed to be induced by radiation.
-- [**Analysis Report - GSE60450**](https://github.com/lujason01/rna_seq_analysis/blob/6364d488dbfb8dc88bd3f76987b4d6c976edb214/RT-IL12%20JD/IL12%20RT%20RNASeq%20Analysis.nb.html)
-
-  
 ---  
 ●○●○●○●○●●○●○●○●○●●○●○●○●○●●○●○●○●○●●○●○●○●○●●○●○●○●○●●○●○●○●○●○●
