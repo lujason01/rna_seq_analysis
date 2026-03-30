@@ -14,7 +14,7 @@ Datasets were downloaded from **Gene Expression Omnibus ([GEO](https://www.ncbi.
 - **Dataset ID:** GSE280078 *Analysed before publication*
 - **Study title:** [Radiotherapy synergizes with an inducible AAV-based immunotherapy platform to program local and systemic antitumor immunity.](https://www.cell.com/cancer-cell/fulltext/S1535-6108(26)00111-X)
 - **Description:** This dataset contains RNA Seq data of an experiment *to determine the transcriptomic changes caused by Radiation and IL12 treatment on murine B16 melanoma tumors.* The expression of Luciferase and IL12 by the AAV8 vector was designed to be induced by radiation.
-- [**Analysis Report - GSE60450**](https://github.com/lujason01/rna_seq_analysis/blob/6364d488dbfb8dc88bd3f76987b4d6c976edb214/RT-IL12%20JD/IL12%20RT%20RNASeq%20Analysis.nb.html)
+- [**Analysis Report - GSE280078**](https://github.com/lujason01/rna_seq_analysis/RT_IL12_JD/IL12_RT_RNASeqAnalysis.nb.html)
   
 ---
 
